@@ -4,34 +4,51 @@
 <div class="grid"><section class="card"><h2>👧 Nina</h2><div id="nina">Ładuję…</div></section><section class="card"><h2>👧 Ula</h2><div id="ula">Ładuję…</div></section><section class="card full"><h2>📌 Dzisiaj</h2><div id="today">Ładuję…</div></section><section class="card full"><h2>🔜 Najbliższe wydarzenia</h2><div id="upcoming">Ładuję…</div></section><section class="card full"><h2>🚗 Szkoła</h2><div class="big">Osobowicka 131 → Dmowskiego 17</div><div class="small">Start około 08:30 · sugerowany wyjazd 08:15</div></section><section class="card full"><h2>💊 Codziennie</h2><div class="big">Nina — tabletka</div></section></div><div class="small" style="margin-top:12px">Dane wydarzeń: Supabase · odświeżanie co minutę</div></div>
 <script>
 const U="https://eemztkimspnnznktyfhp.supabase.co",K="sb_publishable_OHUAxHvdCbaqLEPTVqLSdQ_T9fdu09l";
-function now(){return new Date()}
-let d=now(),dow=d.getDay(),iso=d.toISOString().slice(0,10);
-document.getElementById("date").textContent=d.toLocaleDateString("pl-PL",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
-const time=x=>x?x.slice(0,5):"",row=e=>`<div class="event ${e.status==="uncertain"?"uncertain":""}"><div class="time">${e.start_time?time(e.start_time):(e.end_time?"do "+time(e.end_time):"rano")}</div><div class="person">${e.person}</div><div>${e.title}${e.status==="uncertain"?" ?":""}</div></div>`;
+const time=x=>x?x.slice(0,5):"";
+const row=e=>`<div class="event ${e.status==="uncertain"?"uncertain":""}"><div class="time">${e.start_time?time(e.start_time):(e.end_time?"do "+time(e.end_time):"rano")}</div><div class="person">${e.person}</div><div>${e.title}${e.status==="uncertain"?" ?":""}</div></div>`;
+
+function localISO(d){
+  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+
+function refreshHeader(){
+  const d=new Date();
+  document.getElementById("date").textContent=d.toLocaleDateString("pl-PL",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+}
+
 async function events(){
+  const d=new Date();
+  const dow=d.getDay();
+  const iso=localISO(d);
+  refreshHeader();
+
   let r=await fetch(U+"/rest/v1/events?select=*&active=eq.true",{headers:{apikey:K,Authorization:"Bearer "+K}});
-  if(!r.ok)throw Error();
+  if(!r.ok)throw Error("Supabase");
   let a=await r.json();
 
-  d=now(); dow=d.getDay(); iso=d.toISOString().slice(0,10);
   const dayStart=new Date(d.getFullYear(),d.getMonth(),d.getDate());
   const dayEnd=new Date(d.getFullYear(),d.getMonth(),d.getDate()+8);
 
   function eventDate(e){
     if(e.recurrence==="once") return new Date(e.event_date+"T"+(e.start_time||"23:59:59"));
-    let delta=(e.day_of_week-dow+7)%7;
+    const delta=(e.day_of_week-dow+7)%7;
     return new Date(dayStart.getTime()+delta*86400000);
   }
 
   const nowMinutes=d.getHours()*60+d.getMinutes()+d.getSeconds()/60;
+
+  function isFinished(e){
+    // Jeśli jest godzina zakończenia, wydarzenie znika po jej upływie.
+    if(!e.end_time) return false;
+    const [h,m,s]=e.end_time.split(":").map(Number);
+    return nowMinutes >= h*60+m+(s||0)/60;
+  }
+
   const todayEvents=a.filter(e=>{
-    const sameDay=(e.recurrence==="weekly"&&e.day_of_week===dow)||(e.recurrence==="once"&&e.event_date===iso);
-    if(!sameDay) return false;
-    if(!e.start_time) return true;
-    const end=e.end_time||e.start_time;
-    const [h,m,s]=(end||"00:00:00").split(":").map(Number);
-    const endMinutes=h*60+m+(s||0)/60;
-    return nowMinutes < endMinutes;
+    const sameDay=(e.recurrence==="weekly"&&e.day_of_week===dow) ||
+                  (e.recurrence==="once"&&e.event_date===iso);
+    return sameDay && !isFinished(e);
   }).sort((x,y)=>(x.start_time||"99").localeCompare(y.start_time||"99"));
 
   document.getElementById("today").innerHTML=
@@ -72,7 +89,5 @@ function tickClock(){
 tickClock();
 setInterval(tickClock,1000);
 
-events().catch(()=>{document.getElementById("today").innerHTML="<div class='warning'>Nie udało się pobrać wydarzeń z bazy.</div>";document.getElementById("nina").innerHTML=document.getElementById("ula").innerHTML="<div class='warning'>Brak połączenia z bazą.</div>"});weather();
-setInterval(()=>events().catch(()=>{}),60000);
-setInterval(()=>weather(),300000);
+events().catch(()=>{document.getElementById("today").innerHTML="<div class='warning'>Nie udało się pobrać wydarzeń z bazy.</div>";document.getElementById("nina").innerHTML=document.getElementById("ula").innerHTML="<div class='warning'>Brak połączenia z bazą.</div>"});weather();setInterval(()=>location.reload(),900000);
 </script></body></html>
