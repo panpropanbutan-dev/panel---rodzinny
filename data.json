@@ -1,0 +1,82 @@
+{
+  "school": {
+    "from": "Osobowicka 131",
+    "to": "Dmowskiego 17",
+    "departure": "08:15"
+  },
+  "daily": {
+    "nina": [
+      "💊 Tabletka"
+    ]
+  },
+  "schedule": {
+    "monday": [
+      [
+        "15:00",
+        "Nina + Ula",
+        "TUS"
+      ]
+    ],
+    "tuesday": [
+      [
+        "rano",
+        "Nina",
+        "WF — spakować strój"
+      ],
+      [
+        "do 16:15",
+        "Ula",
+        "cheerleading"
+      ],
+      [
+        "do 16:15",
+        "Nina",
+        "programowanie LEGO"
+      ]
+    ],
+    "wednesday": [
+      [
+        "rano",
+        "Nina",
+        "WF — spakować strój"
+      ]
+    ],
+    "thursday": [
+      [
+        "15:00",
+        "Ula",
+        "breakdance"
+      ]
+    ],
+    "friday": [
+      [
+        "08:00",
+        "Ula",
+        "pianino"
+      ],
+      [
+        "08:15",
+        "Nina",
+        "zajęcia wyrównawcze"
+      ],
+      [
+        "14:30",
+        "Ula",
+        "malort"
+      ],
+      [
+        "15:00",
+        "Nina",
+        "chór"
+      ]
+    ]
+  },
+  "one_off": [
+    [
+      "2026-10-10",
+      "19:30",
+      "Norbert",
+      "osteopata"
+    ]
+  ]
+}
