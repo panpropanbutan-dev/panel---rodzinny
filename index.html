@@ -26,4 +26,4 @@ fetch('data.json').then(r=>r.json()).then(data=>{
  next.innerHTML=upcoming?`<b>${upcoming[0].split('-').reverse().join('.')} • ${upcoming[1]}</b> — ${upcoming[2]} — ${upcoming[3]}`:'Brak najbliższych wydarzeń.';
 }).catch(()=>{plan.textContent='Nie udało się pobrać danych.'});
 fetch('https://api.open-meteo.com/v1/forecast?latitude=51.1079&longitude=17.0385&current=temperature_2m,weather_code&timezone=Europe%2FWarsaw').then(r=>r.json()).then(j=>{const names={0:'bezchmurnie',1:'pogodnie',2:'częściowe zachmurzenie',3:'pochmurno',45:'mgła',48:'mgła',51:'mżawka',53:'mżawka',55:'mżawka',61:'deszcz',63:'deszcz',65:'deszcz',71:'śnieg',73:'śnieg',75:'śnieg',80:'przelotny deszcz',81:'deszcz',82:'silny deszcz',95:'burza',96:'burza',99:'burza'};weather.textContent=`Wrocław • ${Math.round(j.current.temperature_2m)}° • ${names[j.current.weather_code]||''}`}).catch(()=>weather.textContent='Wrocław • pogoda niedostępna');
-</script></body></html>
+setInterval(()=>location.reload(),15*60*1000);</script></body></html>
