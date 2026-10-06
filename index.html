@@ -1,9 +1,11 @@
 <!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Family Hub</title><style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f3;color:#172018}.wrap{max-width:1100px;margin:auto;padding:18px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}h1{margin:0;font-size:30px}.date{font-size:18px;color:#657064}.weather,.card{background:#fff;border-radius:18px;box-shadow:0 2px 10px #0001}.weather{padding:12px 16px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.card{padding:18px}.card h2{margin:0 0 12px;font-size:21px}.full{grid-column:1/-1}.event{display:grid;grid-template-columns:80px 75px 1fr;gap:8px;padding:10px 0;border-top:1px solid #edf0ec;align-items:center}.event:first-child{border-top:0}.time,.person{font-weight:700}.muted,.small{color:#6d766d}.big{font-size:21px;font-weight:700}.uncertain{opacity:.75}.warning{color:#8a6411}@media(max-width:700px){.grid{grid-template-columns:1fr}.full{grid-column:auto}.top{align-items:flex-start;gap:10px;flex-direction:column}.event{grid-template-columns:65px 65px 1fr}}</style></head>
 <body><div class="wrap"><div class="top"><div><h1>Family Hub</h1><div class="date" id="date">—</div></div><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div class="weather" id="clock">--:--</div><div class="weather" id="weather">🌤️ Pobieram pogodę…</div></div></div>
-<div class="grid"><section class="card"><h2>👧 Nina</h2><div id="nina">Ładuję…</div></section><section class="card"><h2>👧 Ula</h2><div id="ula">Ładuję…</div></section><section class="card full"><h2>📌 Dzisiaj</h2><div id="today">Ładuję…</div></section><section class="card full"><h2>🔜 Najbliższe wydarzenia</h2><div id="upcoming">Ładuję…</div></section><section class="card full"><h2>🚗 Szkoła</h2><div class="big">Osobowicka 131 → Dmowskiego 17</div><div class="small">Start około 08:30 · sugerowany wyjazd 08:15</div></section><section class="card full"><h2>💊 Codziennie</h2><div class="big">Nina — tabletka</div></section></div><div class="small" style="margin-top:12px">Dane wydarzeń: Supabase · odświeżanie co 15 minut</div></div>
+<div class="grid"><section class="card"><h2>👧 Nina</h2><div id="nina">Ładuję…</div></section><section class="card"><h2>👧 Ula</h2><div id="ula">Ładuję…</div></section><section class="card full"><h2>📌 Dzisiaj</h2><div id="today">Ładuję…</div></section><section class="card full"><h2>🔜 Najbliższe wydarzenia</h2><div id="upcoming">Ładuję…</div></section><section class="card full"><h2>🚗 Szkoła</h2><div class="big">Osobowicka 131 → Dmowskiego 17</div><div class="small">Start około 08:30 · sugerowany wyjazd 08:15</div></section><section class="card full"><h2>💊 Codziennie</h2><div class="big">Nina — tabletka</div></section></div><div class="small" style="margin-top:12px">Dane wydarzeń: Supabase · odświeżanie co minutę</div></div>
 <script>
-const U="https://eemztkimspnnznktyfhp.supabase.co",K="sb_publishable_OHUAxHvdCbaqLEPTVqLSdQ_T9fdu09l",d=new Date(),dow=d.getDay(),iso=d.toISOString().slice(0,10);
+const U="https://eemztkimspnnznktyfhp.supabase.co",K="sb_publishable_OHUAxHvdCbaqLEPTVqLSdQ_T9fdu09l";
+function now(){return new Date()}
+let d=now(),dow=d.getDay(),iso=d.toISOString().slice(0,10);
 document.getElementById("date").textContent=d.toLocaleDateString("pl-PL",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
 const time=x=>x?x.slice(0,5):"",row=e=>`<div class="event ${e.status==="uncertain"?"uncertain":""}"><div class="time">${e.start_time?time(e.start_time):(e.end_time?"do "+time(e.end_time):"rano")}</div><div class="person">${e.person}</div><div>${e.title}${e.status==="uncertain"?" ?":""}</div></div>`;
 async function events(){
@@ -11,6 +13,7 @@ async function events(){
   if(!r.ok)throw Error();
   let a=await r.json();
 
+  d=now(); dow=d.getDay(); iso=d.toISOString().slice(0,10);
   const dayStart=new Date(d.getFullYear(),d.getMonth(),d.getDate());
   const dayEnd=new Date(d.getFullYear(),d.getMonth(),d.getDate()+8);
 
@@ -20,10 +23,16 @@ async function events(){
     return new Date(dayStart.getTime()+delta*86400000);
   }
 
-  const todayEvents=a.filter(e=>
-    (e.recurrence==="weekly"&&e.day_of_week===dow) ||
-    (e.recurrence==="once"&&e.event_date===iso)
-  ).sort((x,y)=>(x.start_time||"99").localeCompare(y.start_time||"99"));
+  const nowMinutes=d.getHours()*60+d.getMinutes()+d.getSeconds()/60;
+  const todayEvents=a.filter(e=>{
+    const sameDay=(e.recurrence==="weekly"&&e.day_of_week===dow)||(e.recurrence==="once"&&e.event_date===iso);
+    if(!sameDay) return false;
+    if(!e.start_time) return true;
+    const end=e.end_time||e.start_time;
+    const [h,m,s]=(end||"00:00:00").split(":").map(Number);
+    const endMinutes=h*60+m+(s||0)/60;
+    return nowMinutes < endMinutes;
+  }).sort((x,y)=>(x.start_time||"99").localeCompare(y.start_time||"99"));
 
   document.getElementById("today").innerHTML=
     todayEvents.length?todayEvents.map(row).join(""):"<div class='muted'>Brak zaplanowanych wydarzeń.</div>";
@@ -63,5 +72,7 @@ function tickClock(){
 tickClock();
 setInterval(tickClock,1000);
 
-events().catch(()=>{document.getElementById("today").innerHTML="<div class='warning'>Nie udało się pobrać wydarzeń z bazy.</div>";document.getElementById("nina").innerHTML=document.getElementById("ula").innerHTML="<div class='warning'>Brak połączenia z bazą.</div>"});weather();setInterval(()=>location.reload(),900000);
+events().catch(()=>{document.getElementById("today").innerHTML="<div class='warning'>Nie udało się pobrać wydarzeń z bazy.</div>";document.getElementById("nina").innerHTML=document.getElementById("ula").innerHTML="<div class='warning'>Brak połączenia z bazą.</div>"});weather();
+setInterval(()=>events().catch(()=>{}),60000);
+setInterval(()=>weather(),300000);
 </script></body></html>
